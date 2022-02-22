@@ -19,9 +19,9 @@ const cloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary, // CREDENTIALS,
   params: {
     folder: "test",
-    
+
     resource_type: "raw",
-    raw_convert: "aspose",
+    //  raw_convert: "aspose",
   },
 });
 
@@ -32,36 +32,16 @@ fileRouter.post(
   multer({
     storage: cloudinaryStorage,
     //limits: { fieldSize: 100 * 1024 * 1024 },
-    maxBytes: 10000000,
+    /*  maxBytes: 10000000,
     fileFilter(req, file, cb) {
       // upload only mp4 and mkv format
       if (!file.originalname.match(/\.(ppt|pptx)$/)) {
         return cb(new Error("Please upload a file"));
       }
       cb(null, true);
-    },
+    }, */
   }).single("fileUpload"),
   async (req, res) => {
-    /* try {
-      console.log(req.file);
-
-      const getFileById = await fileUploadModel.findByIdAndUpdate(
-        req.params.tid
-      );
-
-      if (getFileById) {
-        getFileById.file = req.file.path;
-        console.log(getFileById.file);
-        await getFileById.save();
-        console.log("here is the file", getFileById);
-
-        res.status(203).send({ success: true, data: getFileById });
-      } else {
-        res.status(404).send({ success: false, message: "Post not found" });
-      }
-    } catch (error) {
-      res.status(500).send({ success: false, error: error.message });
-    } */
     try {
       const id = req.params.tid;
       const filePath = req.file.path;
@@ -231,3 +211,23 @@ fileRouter
     }
   });
 export default fileRouter;
+/* try {
+      console.log(req.file);
+
+      const getFileById = await fileUploadModel.findByIdAndUpdate(
+        req.params.tid
+      );
+
+      if (getFileById) {
+        getFileById.file = req.file.path;
+        console.log(getFileById.file);
+        await getFileById.save();
+        console.log("here is the file", getFileById);
+
+        res.status(203).send({ success: true, data: getFileById });
+      } else {
+        res.status(404).send({ success: false, message: "Post not found" });
+      }
+    } catch (error) {
+      res.status(500).send({ success: false, error: error.message });
+    } */
