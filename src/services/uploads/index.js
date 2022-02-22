@@ -7,11 +7,21 @@ import { pipeline } from "stream";
 //import { createGzip } from "zlib";
 
 import { getPdfReadableStream } from "../../tools/pdf-tools.js";
-const cloudinaryStorage = new CloudinaryStorage({
+/* const cloudinaryStorage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "teacher-files",
     resource_type: "raw",
+    // raw_convert: "pdf",
+  },
+}); */
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary, // CREDENTIALS,
+  params: {
+    folder: "test",
+    
+    resource_type: "raw",
+    raw_convert: "aspose",
   },
 });
 
@@ -23,9 +33,16 @@ fileRouter.post(
     storage: cloudinaryStorage,
     //limits: { fieldSize: 100 * 1024 * 1024 },
     maxBytes: 10000000,
+    fileFilter(req, file, cb) {
+      // upload only mp4 and mkv format
+      if (!file.originalname.match(/\.(ppt|pptx)$/)) {
+        return cb(new Error("Please upload a file"));
+      }
+      cb(null, true);
+    },
   }).single("fileUpload"),
   async (req, res) => {
-    try {
+    /* try {
       console.log(req.file);
 
       const getFileById = await fileUploadModel.findByIdAndUpdate(
@@ -34,7 +51,7 @@ fileRouter.post(
 
       if (getFileById) {
         getFileById.file = req.file.path;
-
+        console.log(getFileById.file);
         await getFileById.save();
         console.log("here is the file", getFileById);
 
@@ -44,6 +61,22 @@ fileRouter.post(
       }
     } catch (error) {
       res.status(500).send({ success: false, error: error.message });
+    } */
+    try {
+      const id = req.params.tid;
+      const filePath = req.file.path;
+      const teacher = await fileUploadModel.findByIdAndUpdate(
+        id,
+        { $set: { file: filePath } },
+        { new: true }
+      );
+      if (teacher) {
+        res.status(203).send(teacher);
+      } else {
+        res.status(404).send(`teacher with id ${id} not found`);
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 );
@@ -119,4 +152,82 @@ fileRouter.get("/:tid/downloadFile", async (req, res, next) => {
   }
 });
 
+fileRouter
+  .get("/:tid/comment", async (req, res) => {
+    try {
+      const getComments = await fileUploadModel
+        .findById(req.params.tid)
+        .populate("comments.user");
+
+      if (getComments) {
+        res.status(200).send({ success: true, data: getComments.comments });
+      } else {
+        res.status(404).send({ success: false, error: "file  not found" });
+      }
+    } catch (error) {
+      res.status(500).send({ success: false, error: error.message });
+    }
+  })
+  .post("/:tid/comment", async (req, res) => {
+    try {
+      console.log(req.body);
+
+      const newComment = await fileUploadModel.findByIdAndUpdate(
+        req.params.tid,
+        { $push: { comments: req.body } },
+        { new: true }
+      );
+
+      if (newComment) {
+        res.status(201).send({ success: true, data: newComment.comments });
+      } else {
+        res.status(400).send({ success: false, error: "Bad Request" });
+      }
+    } catch (error) {
+      res.status(500).send({ success: false, error: error.message });
+    }
+  });
+
+fileRouter
+  .delete("/:tid/comment/:commentId", async (req, res) => {
+    try {
+      const deleteComment = await fileUploadModel.findByIdAndUpdate(
+        req.params.tid,
+        { $pull: { comments: { _id: req.params.commentId } } },
+        { new: true }
+      );
+
+      if (deleteComment) {
+        res
+          .status(204)
+          .send({ success: true, message: "Comment Deleted Succesfully" });
+      } else {
+        res.status(404).send({ success: false, message: "Comment not found" });
+      }
+    } catch (error) {
+      res.status(500).send({ success: false, error: error.message });
+    }
+  })
+  .put("/:tid/comment/:commentId", async (req, res) => {
+    try {
+      const updateComment = await fileUploadModel.updateOne(
+        {
+          _id: req.params.tid,
+          "comments._id": new mongoose.Types.ObjectId(req.params.commentId),
+        },
+        {
+          $set: { "comments.$.comment": req.body.comment },
+        },
+        { new: true }
+      );
+
+      if (updateComment) {
+        res.status(203).send({ success: true, data: updateComment.comments });
+      } else {
+        res.status(404).send({ success: false, message: "Comment not found" });
+      }
+    } catch (error) {
+      res.status(500).send({ success: false, error: error.message });
+    }
+  });
 export default fileRouter;

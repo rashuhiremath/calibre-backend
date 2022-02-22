@@ -14,4 +14,4 @@ const registerSchema = new Schema(
   }
 );
 
-export default model("register", registerSchema);
+export default model("Student", registerSchema);
